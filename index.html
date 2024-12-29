@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+<title>CSS</title>
+<link rel="stylesheet" href="css/image-preview.css">
+<script src="js/edjs.js" type="text/javascript"></script>
+<script src="js/image-preview.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+init();
+
+//for (let [key, value] of data) {
+	 //console.log(key);
+ //console.log(value);
+//}
+//for (let entry of data) {
+//	console.log(entry);
+//}
+///$.getJSON("2015.json",function(msg){);
+	});
+	function init(){
+		$(".input-file").val("");
+			$(".input-file").ImagePreview({onChange:function($imageName,$imageext,$dataurl,$file,$this){
+				
+			}});
+
+
+
+}
+
+</script>
+
+</head>
+
+<body>
+
+<input type="file" class="input-file" name="input-file"  >
+
+</div>
+
+
+
+
+
+
+</body>
+</html>
