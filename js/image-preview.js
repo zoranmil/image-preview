@@ -1,109 +1,101 @@
-function ImagePreview( options) {
- this.defaultOptions = {
-	 el:null,
-   naslov:'Move the image here or click to upload',
-   noimage:"Invalid image. ",
-   image:'',
-   dataurl:'',
-    onChange: null,
- }
-	this.config  = Object.assign({}, this.defaultOptions, options || {});
+/**
+ * EdJS ImagePreview Module - OpenShop Edition
+ * Modern, lightweight replacement for Dropify.
+ *
+ * Logic: Zoran Milićević | Optimization: Virtuozo Integration
+ */
 
-	if(this.config.el===null){
-		return ;
-	}
-  this.dataurl='';
-  this.imageid=null;
-  this.imageName='';
-  this.imageext='';
-  this.file='';
-    this.ToBase64='';
-	  this.selectElement = typeof this.config.el === 'string' ?  document.querySelector(this.config.el) : this.config.el;
-   this.create();
-};
-ImagePreview.prototype.clear = function() {
- document.querySelector('.image-preview-render').innerHTML='';
-document.querySelector("#"+this.imageid).value='';
-};
-ImagePreview.prototype.add= function(file,imageName) {
-  this.imageName=imageName;
-  this.imageext=imageName.split('.').pop();
-  this.file=file;
-return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = () => {
-          this.dataurl = reader.result;
-          if(typeof this.config.onChange === 'function'){
-         this.config.onChange(this.imageName,this.imageext,this.dataurl,this.file,this);
-           }
-      };
-      reader.onerror = reject;
-    });
-};
+function ImagePreview(options) {
+    this.defaultOptions = {
+        el: null,
+        naslov: _P('Move the image here or click to upload'),
+        noimage: _P('Invalid image'),
+        image: '', // Postojeća slika (npr. iz baze)
+        dataurl: '',
+        onChange: null,
+    };
+    this.config = Object.assign({}, this.defaultOptions, options || {});
+    if (!this.config.el) return;
 
-ImagePreview.prototype.getBase64= function() {
-  return   this.dataurl;
-};
-ImagePreview.prototype.getExt= function() {
-  return   this.imageext;
-};
-ImagePreview.prototype.getName= function() {
-  return  this.imageName;
-};
-ImagePreview.prototype.getFile= function() {
-  return  this.file;
-};
+    this.dataurl = '';
+    this.imageName = '';
+    this.imageext = '';
+    this.file = null;
 
+    this.selectElement = typeof this.config.el === 'string' ? document.querySelector(this.config.el) : this.config.el;
+    this.create();
+}
 
 ImagePreview.prototype.create = function() {
-  if(this.config.el===null){
-		return ;
-	}
-  let  name = this.selectElement.getAttribute('name');
-  this.imageid = this.selectElement.getAttribute('id');
-   let  accept = this.selectElement.getAttribute('accept');
-if (this.imageid === null) {
-  this.imageid =name;
-}
-if (accept === null) {
-  accept="image/png, image/jpeg, image/webp";
-}
-  let template='<div class="image-preview-message" id="message'+this.imageid+'">\
-		 <p>'+this.config.naslov+'</p>\
-	 </div>\
-	<span class="image-preview-render render'+this.imageid+'" >';
-  if(this.config.image!=''){
-    template+='<img src="'+this.config.image+'" >';
-  }
-  template+='</span>\
-	 <input type="file" id="'+this.imageid+'" name="'+name+'" accept="'+accept+'" >';
-let element = document.createElement('div');
- element.classList.add("image-preview-wrapper");
-element.innerHTML = template;
-this.selectElement.replaceWith(element);
-$this=this;
-document.querySelector("#"+this.imageid).onchange =  function(e){
-     var file = e.target.files[0] || e.dataTransfer.files[0];
-      e.preventDefault();
-      var imageName = file.name;
-      let id=$(this).attr('id');
-      document.querySelector('.render'+id).innerHTML="<img src='"+URL.createObjectURL(file)+"' id='img"+id+"' alt='"+imageName+"'>";
-        URL.createObjectURL(file);
-       document.querySelector('#message'+id).innerHTML="";
-        $this.add(file,imageName);
+    let name = this.selectElement.getAttribute('name') || 'file';
+    this.imageid = this.selectElement.getAttribute('id') || name;
+    let accept = this.selectElement.getAttribute('accept') || "image/png, image/jpeg, image/webp";
 
-    };
+    // IQ 185 Template: Čist i funkcionalan
+    let template = `
+        <div class="image-preview-message" id="message${this.imageid}">
+            <p>${this.config.naslov}</p>
+        </div>
+        <span class="image-preview-render render${this.imageid}">
+            ${this.config.image ? `<img src="${this.config.image}" alt="Preview">` : ''}
+        </span>
+        <input type="file" id="${this.imageid}" name="${name}" accept="${accept}">
+    `;
 
+    let wrapper = document.createElement('div');
+    wrapper.className = "image-preview-wrapper";
+    wrapper.innerHTML = template;
+
+    this.selectElement.replaceWith(wrapper);
+
+    // Event binding preko EdJS logike
+    const fileInput = wrapper.querySelector('input[type="file"]');
+    const renderArea = wrapper.querySelector('.image-preview-render');
+    const messageArea = wrapper.querySelector('.image-preview-message');
+
+    $(fileInput).on('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        this.file = file;
+        this.imageName = file.name;
+        this.imageext = this.imageName.split('.').pop();
+
+        // 1. Instant Preview (Munjevito - koristi Blob)
+        const objectUrl = URL.createObjectURL(file);
+        renderArea.innerHTML = `<img src="${objectUrl}" alt="${this.imageName}">`;
+        messageArea.innerHTML = ""; // Brišemo tekst kad upadne slika
+
+        // 2. Background Processing (Base64 za API potrebe)
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = () => {
+            this.dataurl = reader.result;
+            if (typeof this.config.onChange === 'function') {
+                this.config.onChange(this.imageName, this.imageext, this.dataurl, this.file, this);
+            }
+        };
+    });
 };
 
-(function ($) {
-	$.prototype.ImagePreview = function (options) {
-     this.each(function(){
-       defaultOptions ={el:this };
-     config  = Object.assign({},defaultOptions, options || {});
+// Metode za izvlačenje podataka
+ImagePreview.prototype.clear = function() {
+    const wrapper = document.getElementById(this.imageid).closest('.image-preview-wrapper');
+    wrapper.querySelector('.image-preview-render').innerHTML = '';
+    wrapper.querySelector('.image-preview-message').innerHTML = `<p>${this.config.naslov}</p>`;
+    document.getElementById(this.imageid).value = '';
+};
 
-      new 	ImagePreview(config);
-    });
-	}
-})(JaJS);
+ImagePreview.prototype.getBase64 = function() { return this.dataurl; };
+ImagePreview.prototype.getExt = function() { return this.imageext; };
+ImagePreview.prototype.getName = function() { return this.imageName; };
+ImagePreview.prototype.getFile = function() { return this.file; };
+
+// EKSTENZIJA ZA EDJS
+(function ($) {
+    $.prototype.ImagePreview = function (options) {
+        return this.each(function() {
+            new ImagePreview(Object.assign({ el: this }, options));
+        });
+    };
+})(EdJS);
